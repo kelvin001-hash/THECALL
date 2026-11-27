@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>THECALL // RIDGE STATION 4</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="crt">
+
+  <!-- ================= MAIN GAME UI ================= -->
+  <main id="ui">
+    <header>
+      <span>RIDGE STN 4</span>
+      <span>OP: <b id="opName">---</b></span>
+      <span id="callNo">CALL 0/5</span>
+      <span>SCORE <b id="scoreEl">0</b></span>
+      <span id="status">STANDBY</span>
+      <span class="hbtns">
+        <button class="key mini" id="btnArchive">ARCHIVE</button>
+        <button class="key mini" id="btnSettings">SETTINGS</button>
+      </span>
+    </header>
+
+    <!-- Facts the operator knows (filled in by game.js from FACTS) -->
+    <section id="brief">
+      TONIGHT'S LOG &gt; PASSCODE: <b id="fPass"></b> | WEATHER: <b id="fWx"></b> | LOCATION: <b id="fLoc"></b>
+    </section>
+
+    <!-- Oscilloscope / spectrum -->
+    <section id="scopeWrap">
+      <div class="tabs">
+        <button class="tab sel" id="tabScope">OSCILLOSCOPE</button>
+        <button class="tab" id="tabSpec">SPECTRUM</button>
+        <span class="hint">[S] switch view</span>
+      </div>
+      <canvas id="scope" width="800" height="200"></canvas>
+    </section>
+
+        <!-- Door camera, radar and call tracker -->
+    <section id="viz">
+      <canvas id="cctv" width="320" height="130"></canvas>
+      <canvas id="radar" width="130" height="130"></canvas>
+      <div id="vpanel">
+        <div id="phone">STANDBY</div>
+        <div id="pips"></div>
+        <div id="lamps">
+          <span class="lamp" id="lampLine">LINE</span>
+          <span class="lamp" id="lampDoor">DOOR</span>
+          <span class="lamp" id="lampAlarm">ALARM</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Meters -->
+    <section id="meters">
+      <div><span>SIGNAL INTEGRITY <b id="intTxt">96%</b></span><div class="meter"><i id="intBar"></i></div></div>
+      <div><span>DOOR PATIENCE <b id="patTxt">--</b></span><div class="meter"><i id="patBar"></i></div></div>
+      <div><span>DREAD</span><div class="meter dread"><i id="dreadBar"></i></div></div>
+    </section>
+
+    <!-- Live transcript -->
+    <div id="transcript"></div>
+
+    <!-- Controls -->
+    <div id="controls">
+      <div id="callControls">
+        <div class="group">
+          <span class="label">INTERROGATE [1] [2] [3]</span>
+          <button class="key ask" data-q="loc">ASK FOR LOCATION</button>
+          <button class="key ask" data-q="wea">ASK ABOUT THE WEATHER</button>
+          <button class="key ask" data-q="pas">ASK FOR PASSCODE</button>
+        </div>
+        <div class="group">
+          <span class="label">DECIDE [U] [A]</span>
+          <button class="key decide" id="unlockBtn">UNLOCK DOOR</button>
+          <button class="key decide danger" id="alarmBtn">SOUND ALARM</button>
+        </div>
+      </div>
+      <div id="betweenBar" class="hidden">
+        <button class="key" id="nextBtn">&#9654; ANSWER NEXT CALL [N]</button>
+        <button class="key" id="btnArchive2">LISTEN TO LOG ARCHIVE</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= SCREENS ================= -->
+  <div id="boot" class="overlay">
+    <h1 class="glitch" data-text="THECALL">THECALL</h1>
+    <p>RIDGE STATION 4 // NIGHT SHIFT</p>
+    <p>Survive 5 calls. Trust the waveform.</p>
+    <p class="dim">Headphones strongly recommended.<br>Contains flashing lights, loud sounds and horror themes.</p>
+    <button id="powerBtn" class="key">POWER ON</button>
+  </div>
+
+  <div id="bios" class="overlay hidden"><pre id="biosLog"></pre></div>
+
+  <div id="login" class="overlay hidden">
+    <h2>OPERATOR LOGIN</h2>
+    <label>ID &gt; <input id="nameInput" maxlength="12" placeholder="ENTER NAME" autocomplete="off" spellcheck="false"></label>
+    <div class="row">
+      <button class="key diff" data-diff="easy">EASY</button>
+      <button class="key diff" data-diff="normal">NORMAL</button>
+      <button class="key diff" data-diff="hard">HARD</button>
+    </div>
+    <p id="diffInfo" class="dim"></p>
+    <div class="row">
+      <button id="startShift" class="key">START SHIFT</button>
+      <button id="openArchiveLogin" class="key">LOG ARCHIVE</button>
+      <button id="openSettingsLogin" class="key">SETTINGS</button>
+    </div>
+    <p id="bestLine" class="dim"></p>
+    <p class="howto">
+      Humans sound organic. Mimics glitch (spikes, flatlines, sub-bass, loops), slip on facts,
+      and <b>know your name</b>. Nobody outside should.
+      Keys: 1 2 3 ask &middot; U unlock &middot; A alarm &middot; S scope view &middot; M mute &middot; F2 debug.
+    </p>
+  </div>
+
+  <!-- Log archive -->
+  <div id="archive" class="modal hidden">
+    <h2>LOG ARCHIVE // RECOVERED TAPES</h2>
+    <p id="archiveInfo" class="dim"></p>
+    <div id="archiveList"></div>
+    <div id="archivePlayer" class="hidden">
+      <h3 id="archiveTitle"></h3>
+      <canvas id="archScope" width="800" height="110"></canvas>
+      <div id="archiveText"></div>
+      <button class="key danger" id="archiveStop">STOP TAPE</button>
+    </div>
+    <button class="key" id="archiveClose">CLOSE [ESC]</button>
+  </div>
+
+  <!-- Settings -->
+  <div id="settings" class="modal hidden">
+    <h2>SETTINGS</h2>
+    <label>VOLUME <input type="range" id="volRange" min="0" max="1" step="0.05"></label>
+    <label><input type="checkbox" id="muteChk"> MUTE ALL AUDIO [M]</label>
+    <label><input type="checkbox" id="fxChk"> CRT EFFECTS (scanlines, grain, flicker)</label>
+    <label><input type="checkbox" id="flashChk"> SCARE FLASHES &amp; SCREEN SHAKE (turn off for photosensitivity)</label>
+    <button class="key danger" id="resetSave">ERASE SAVE DATA</button>
+    <button class="key" id="settingsClose">CLOSE [ESC]</button>
+  </div>
+
+  <!-- Game over / win -->
+  <div id="end" class="overlay hidden">
+    <pre id="endFace"></pre>
+    <div id="endLog"></div>
+    <div id="endStats"></div>
+    <div id="endBtns" class="row"></div>
+  </div>
+
+  <!-- Effect layers -->
+  <div id="scare" class="hidden"><pre id="scareFace"></pre></div>
+    <div id="toast"></div>
+  <div id="pulse"></div>
+  <div id="ghost"></div>
+  <div id="flash"></div>
+  <div id="noise"></div>
+  <div id="scan"></div>
+  <div id="vignette"></div>
+  <pre id="debug" class="hidden"></pre>
+</div>
+
+<!-- Load order matters -->
+<script src="js/data.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/scope.js"></script>
+<script src="js/effects.js"></script>
+<script src="js/visuals.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
